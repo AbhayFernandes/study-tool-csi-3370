@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  scylladb:
+    image: scylladb/scylla:5.4
+    container_name: study-tool-scylladb
+    ports:
+      - "9042:9042"  # CQL port
+      - "9160:9160"  # Thrift port
+      - "10000:10000" # REST API port
+    environment:
+      - SCYLLA_CLUSTER_NAME=StudyToolCluster
+      - SCYLLA_DC=datacenter1
+      - SCYLLA_RACK=rack1
+      - SCYLLA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+    volumes:
+      - scylla_data:/var/lib/scylla
+      - ./database/init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - study-tool-network
+    command: --seeds=scylladb --smp=1 --memory=2G --overprovisioned=1 --api-address=0.0.0.0
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "SELECT now() FROM system.local"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: study-tool-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - DB_HOST=scylladb
+      - DB_PORT=9042
+      - DB_KEYSPACE=${DB_KEYSPACE:-studytool}
+      - DB_USERNAME=${DB_USERNAME:-}
+      - DB_PASSWORD=${DB_PASSWORD:-}
+    networks:
+      - study-tool-network
+    depends_on:
+      scylladb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: study-tool-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - study-tool-network
+    environment:
+      - REACT_APP_API_URL=http://localhost:8080
+
+networks:
+  study-tool-network:
+    driver: bridge
+
+volumes:
+  scylla_data:
+    driver: local
+
+# Optional: Add database service when ready
+# volumes:
+#   postgres_data: 
