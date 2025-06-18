@@ -8,6 +8,8 @@ RUN gradle shadowJar --no-daemon
 # Runtime stage
 FROM openjdk:17.0.1-jdk-slim
 WORKDIR /app
+# Install curl for healthchecks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app/build/libs/study-tool-backend.jar app.jar
 
 # Create non-root user

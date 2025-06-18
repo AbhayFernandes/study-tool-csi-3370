@@ -32,6 +32,10 @@ frontend/dist/
 *.swp
 *.swo
 *~
+.classpath
+.settings/
+.project
+.factorypath
 
 # OS
 .DS_Store

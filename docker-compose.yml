@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   scylladb:
     image: scylladb/scylla:5.4
@@ -46,7 +44,7 @@ services:
       scylladb:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/hello"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -66,6 +64,23 @@ services:
       - study-tool-network
     environment:
       - REACT_APP_API_URL=http://localhost:8080
+
+  scylla-init:
+    image: scylladb/scylla:5.4
+    depends_on:
+      scylladb:
+        condition: service_healthy
+    volumes:
+      - ./database/init-scripts:/init-scripts
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >
+        for f in /init-scripts/*.cql; do
+          cqlsh scylladb 9042 -f "$$f";
+        done
+    networks:
+      - study-tool-network
 
 networks:
   study-tool-network:

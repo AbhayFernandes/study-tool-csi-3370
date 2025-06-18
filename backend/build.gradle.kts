@@ -32,6 +32,10 @@ dependencies {
     testImplementation("io.javalin:javalin-testtools:5.6.3")
     testImplementation("org.mockito:mockito-core:5.8.0")
     testImplementation("org.assertj:assertj-core:3.24.2")
+
+    // Google GenAI SDK
+    implementation(platform("com.google.cloud:libraries-bom:26.62.0"))
+    implementation("com.google.cloud:google-cloud-vertexai")
 }
 
 application {
