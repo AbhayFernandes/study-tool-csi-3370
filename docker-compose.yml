@@ -35,6 +35,7 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - DB_HOST=scylladb
       - DB_PORT=9042
+      - DB_DATACENTER=datacenter1
       - DB_KEYSPACE=${DB_KEYSPACE:-studytool}
       - DB_USERNAME=${DB_USERNAME:-}
       - DB_PASSWORD=${DB_PASSWORD:-}

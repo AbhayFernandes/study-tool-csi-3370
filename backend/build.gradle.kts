@@ -27,6 +27,10 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.4.14")
     implementation("org.slf4j:slf4j-api:2.0.9")
     
+    // ScyllaDB Java Driver
+    implementation("com.scylladb:java-driver-core:4.18.1.0")
+    implementation("com.scylladb:java-driver-query-builder:4.18.1.0")
+    
     // Testing
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
     testImplementation("io.javalin:javalin-testtools:5.6.3")
