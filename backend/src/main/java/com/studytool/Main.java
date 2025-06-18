@@ -9,6 +9,8 @@ import com.studytool.auth.AuthInterface;
 import com.studytool.auth.LoginRequest;
 import com.studytool.auth.LoginResponse;
 import com.studytool.auth.SimpleAuthService;
+import com.studytool.filestorage.FileStorageService;
+import com.studytool.filestorage.FileUploadController;
 
 import io.javalin.Javalin;
 import io.javalin.http.Context;
@@ -20,12 +22,23 @@ public class Main {
     private static final AuthInterface authService = new SimpleAuthService();
     
     public static void main(String[] args) {
+        // Initialize file storage service
+        String fileStoragePath = System.getenv("FILE_STORAGE_PATH");
+        if (fileStoragePath == null || fileStoragePath.trim().isEmpty()) {
+            fileStoragePath = "./uploads"; // Default fallback
+        }
+        FileStorageService fileStorageService = new FileStorageService(fileStoragePath);
+        FileUploadController fileUploadController = new FileUploadController(fileStorageService);
+        
         // Create Javalin app with basic configuration
         Javalin app = Javalin.create(config -> {
             // Enable CORS for all origins (development setup)
             config.plugins.enableCors(cors -> {
                 cors.add(corsContainer -> corsContainer.anyHost());
             });
+            
+            // Configure multipart upload settings
+            config.http.maxRequestSize = 10 * 1024 * 1024L; // 10MB max request size
         }).start(8080);
         
         // Basic routes
@@ -35,9 +48,14 @@ public class Main {
         app.post("/api/login", Main::handleLogin);
         app.post("/api/validate", Main::handleValidateToken);
         
+        // Register file upload routes
+        fileUploadController.registerRoutes(app);
+        
         logger.info("Study Tool Backend started on port 8080");
         logger.info("Visit: http://localhost:8080");
         logger.info("Login endpoint: POST http://localhost:8080/api/login");
+        logger.info("File upload endpoint: POST http://localhost:8080/api/files/upload");
+        logger.info("File storage path: {}", fileStoragePath);
     }
     
     /**

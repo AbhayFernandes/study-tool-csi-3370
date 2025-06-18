@@ -38,6 +38,9 @@ services:
       - DB_KEYSPACE=${DB_KEYSPACE:-studytool}
       - DB_USERNAME=${DB_USERNAME:-}
       - DB_PASSWORD=${DB_PASSWORD:-}
+      - FILE_STORAGE_PATH=/app/uploads
+    volumes:
+      - ./uploads:/app/uploads
     networks:
       - study-tool-network
     depends_on:
