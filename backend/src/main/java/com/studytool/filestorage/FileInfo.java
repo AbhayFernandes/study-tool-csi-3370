@@ -1,10 +1,14 @@
 package com.studytool.filestorage;
 
 import java.time.Instant;
+import java.util.UUID;
 
 public record FileInfo(
-    String filename,
+    UUID fileId,
+    String originalFilename,
+    String storedFilename,
     long size,
-    Instant lastModified
+    Instant uploadTime,
+    String filePath
 ) {
 } 

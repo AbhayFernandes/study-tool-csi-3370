@@ -46,9 +46,14 @@ public class FileUploadController {
             
             ctx.status(200).json(Map.of(
                 "message", "File uploaded successfully",
-                "filename", result.storedFilename(),
-                "originalFilename", result.originalFilename(),
-                "size", result.fileSize()
+                "file", Map.of(
+                    "id", result.fileId(),
+                    "filename", result.storedFilename(),
+                    "originalFilename", result.originalFilename(),
+                    "size", result.fileSize(),
+                    "uploadTime", result.uploadTime(),
+                    "userId", result.userId()
+                )
             ));
             
         } catch (IllegalArgumentException e) {
@@ -65,7 +70,12 @@ public class FileUploadController {
             String userId = getUserId(ctx);
             List<FileInfo> files = fileStorageService.getUserFiles(userId);
             
-            ctx.status(200).json(Map.of("files", files));
+            // Convert FileInfo to FileDto for better API response
+            List<FileDto> fileDtos = files.stream()
+                .map(fileInfo -> FileDto.fromFileInfo(fileInfo, userId))
+                .toList();
+            
+            ctx.status(200).json(Map.of("files", fileDtos));
             
         } catch (Exception e) {
             logger.error("Error listing files", e);

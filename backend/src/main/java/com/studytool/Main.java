@@ -5,23 +5,31 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.studytool.auth.AuthInterface;
 import com.studytool.auth.LoginRequest;
 import com.studytool.auth.LoginResponse;
 import com.studytool.auth.ScyllaAuthService;
 import com.studytool.database.DatabaseConfig;
+import com.studytool.database.FileRepository;
 import com.studytool.database.ScyllaManager;
+import com.studytool.database.UserRepository;
 import com.studytool.filestorage.FileStorageService;
 import com.studytool.filestorage.FileUploadController;
 
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+import io.javalin.json.JavalinJackson;
 
 public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
     
     private static ScyllaManager scyllaManager;
     private static AuthInterface authService;
+    private static FileRepository fileRepository;
+    private static UserRepository userRepository;
     
     public static void main(String[] args) {
         // Initialize database connection
@@ -32,11 +40,19 @@ public class Main {
         if (fileStoragePath == null || fileStoragePath.trim().isEmpty()) {
             fileStoragePath = "./uploads"; // Default fallback
         }
-        FileStorageService fileStorageService = new FileStorageService(fileStoragePath);
+        FileStorageService fileStorageService = new FileStorageService(fileStoragePath, fileRepository, userRepository);
         FileUploadController fileUploadController = new FileUploadController(fileStorageService);
+        
+        // Configure Jackson for proper timestamp serialization
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         
         // Create Javalin app with basic configuration
         Javalin app = Javalin.create(config -> {
+            // Configure JSON mapper
+            config.jsonMapper(new JavalinJackson(objectMapper));
+            
             // Enable CORS for all origins (development setup)
             config.plugins.enableCors(cors -> {
                 cors.add(corsContainer -> corsContainer.anyHost());
@@ -90,6 +106,8 @@ public class Main {
             
             scyllaManager.initialize();
             authService = new ScyllaAuthService(scyllaManager);
+            fileRepository = new FileRepository(scyllaManager.getSession());
+            userRepository = new UserRepository(scyllaManager.getSession());
             
             logger.info("Database initialized successfully with ScyllaDB");
         } catch (Exception e) {

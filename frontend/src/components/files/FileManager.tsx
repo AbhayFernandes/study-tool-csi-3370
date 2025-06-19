@@ -11,9 +11,12 @@ interface FileManagerProps {
 }
 
 interface FileInfo {
-  filename: string;
-  size: number;
-  lastModified: string;
+  id: string;
+  originalFilename: string;
+  storedFilename: string;
+  fileSize: number;
+  uploadTime: string;
+  userId: string;
 }
 
 const FileManager: React.FC<FileManagerProps> = ({ userId, refreshTrigger }) => {
@@ -99,14 +102,14 @@ const FileManager: React.FC<FileManagerProps> = ({ userId, refreshTrigger }) => 
     }
   };
 
-  const downloadFile = async (filename: string) => {
+  const downloadFile = async (file: FileInfo) => {
     try {
       const headers: Record<string, string> = {};
       if (userId) {
         headers['X-User-ID'] = userId;
       }
 
-      const response = await fetch(`http://localhost:8080/api/files/${filename}`, {
+      const response = await fetch(`http://localhost:8080/api/files/${file.storedFilename}`, {
         method: 'GET',
         headers,
       });
@@ -117,7 +120,7 @@ const FileManager: React.FC<FileManagerProps> = ({ userId, refreshTrigger }) => 
         const a = document.createElement('a');
         a.style.display = 'none';
         a.href = url;
-        a.download = filename;
+        a.download = file.originalFilename; // Use original filename for download
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -131,8 +134,8 @@ const FileManager: React.FC<FileManagerProps> = ({ userId, refreshTrigger }) => 
     }
   };
 
-  const deleteFile = async (filename: string) => {
-    setDeletingFile(filename);
+  const deleteFile = async (file: FileInfo) => {
+    setDeletingFile(file.storedFilename);
     
     try {
       const headers: Record<string, string> = {};
@@ -140,13 +143,13 @@ const FileManager: React.FC<FileManagerProps> = ({ userId, refreshTrigger }) => 
         headers['X-User-ID'] = userId;
       }
 
-      const response = await fetch(`http://localhost:8080/api/files/${filename}`, {
+      const response = await fetch(`http://localhost:8080/api/files/${file.storedFilename}`, {
         method: 'DELETE',
         headers,
       });
 
       if (response.ok) {
-        setFiles(prev => prev.filter(file => file.filename !== filename));
+        setFiles(prev => prev.filter(f => f.id !== file.id));
       } else {
         const errorData = await response.json();
         setError(errorData.error || 'Failed to delete file');
@@ -225,38 +228,38 @@ const FileManager: React.FC<FileManagerProps> = ({ userId, refreshTrigger }) => 
           <div className="space-y-2">
             {files.map((file) => (
               <div
-                key={file.filename}
+                key={file.id}
                 className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  {getFileIcon(file.filename)}
+                  {getFileIcon(file.originalFilename)}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
-                      {file.filename}
+                      {file.originalFilename}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <p className="text-xs text-muted-foreground">
-                        {formatFileSize(file.size)}
+                        {formatFileSize(file.fileSize)}
                       </p>
-                      {file.lastModified && (
+                      {file.uploadTime && (
                         <>
                           <span className="text-xs text-muted-foreground">•</span>
                           <p className="text-xs text-muted-foreground">
-                            {new Date(file.lastModified).toLocaleDateString()}
+                            {new Date(file.uploadTime).toLocaleDateString()}
                           </p>
                         </>
                       )}
                     </div>
                   </div>
-                  <Badge variant={getFileTypeColor(file.filename)}>
-                    {file.filename.split('.').pop()?.toUpperCase() || 'FILE'}
+                  <Badge variant={getFileTypeColor(file.originalFilename)}>
+                    {file.originalFilename.split('.').pop()?.toUpperCase() || 'FILE'}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-1 ml-2">
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => downloadFile(file.filename)}
+                    onClick={() => downloadFile(file)}
                     title="Download file"
                   >
                     <Download className="h-4 w-4" />
@@ -264,12 +267,12 @@ const FileManager: React.FC<FileManagerProps> = ({ userId, refreshTrigger }) => 
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => deleteFile(file.filename)}
-                    disabled={deletingFile === file.filename}
+                    onClick={() => deleteFile(file)}
+                    disabled={deletingFile === file.storedFilename}
                     title="Delete file"
                     className="text-destructive hover:text-destructive"
                   >
-                    {deletingFile === file.filename ? (
+                    {deletingFile === file.storedFilename ? (
                       <RefreshCw className="h-4 w-4 animate-spin" />
                     ) : (
                       <Trash2 className="h-4 w-4" />

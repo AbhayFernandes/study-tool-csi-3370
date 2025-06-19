@@ -12,9 +12,12 @@ interface FileUploadProps {
 }
 
 interface UploadedFileInfo {
+  id: string;
   filename: string;
   originalFilename: string;
   size: number;
+  uploadTime: string;
+  userId: string;
 }
 
 interface FileUploadState {
@@ -131,11 +134,14 @@ const FileUpload: React.FC<FileUploadProps> = ({ userId, onUploadComplete }) => 
             progress: 100 
           }));
           
-          if (onUploadComplete) {
+          if (onUploadComplete && response.file) {
             onUploadComplete([{
-              filename: response.filename,
-              originalFilename: response.originalFilename,
-              size: response.size,
+              id: response.file.id,
+              filename: response.file.filename,
+              originalFilename: response.file.originalFilename,
+              size: response.file.size,
+              uploadTime: response.file.uploadTime,
+              userId: response.file.userId,
             }]);
           }
         } else {
