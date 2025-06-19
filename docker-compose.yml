@@ -32,16 +32,30 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      # Database configuration
       - DB_HOST=scylladb
       - DB_PORT=9042
       - DB_DATACENTER=datacenter1
       - DB_KEYSPACE=${DB_KEYSPACE:-studytool}
       - DB_USERNAME=${DB_USERNAME:-}
       - DB_PASSWORD=${DB_PASSWORD:-}
+      
+      # File storage configuration
       - FILE_STORAGE_PATH=/app/uploads
+      
+      # Vertex AI configuration
+      - VERTEX_PROJECT_ID=${VERTEX_PROJECT_ID:-your-project-id}
+      - VERTEX_LOCATION=${VERTEX_LOCATION:-us-central1}
+      - VERTEX_TEXT_MODEL=${VERTEX_TEXT_MODEL:-text-bison-001}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-/app/vertex-ai-key.json}
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-${VERTEX_PROJECT_ID}}
+      
+      # Legacy environment variables (for backward compatibility)
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     volumes:
       - ./uploads:/app/uploads
+      # Mount the service account key file if it exists locally
+      - ${VERTEX_AI_KEY_PATH:-./vertex-ai-key.json}:/app/vertex-ai-key.json:ro
     networks:
       - study-tool-network
     depends_on:

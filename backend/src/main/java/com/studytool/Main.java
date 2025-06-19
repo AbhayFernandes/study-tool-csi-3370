@@ -18,6 +18,11 @@ import com.studytool.database.ScyllaManager;
 import com.studytool.database.UserRepository;
 import com.studytool.filestorage.FileStorageService;
 import com.studytool.filestorage.FileUploadController;
+import com.studytool.vertex.VertexAiConfig;
+import com.studytool.vertex.VertexAiController;
+import com.studytool.vertex.VertexAiService;
+import com.studytool.vertex.VertexAiServiceImpl;
+import com.studytool.vertex.repository.SummaryRepository;
 
 import io.javalin.Javalin;
 import io.javalin.http.Context;
@@ -30,10 +35,14 @@ public class Main {
     private static AuthInterface authService;
     private static FileRepository fileRepository;
     private static UserRepository userRepository;
+    private static VertexAiService vertexAiService;
     
     public static void main(String[] args) {
         // Initialize database connection
         initializeDatabase();
+        
+        // Initialize Vertex AI service
+        initializeVertexAi();
         
         // Initialize file storage service
         String fileStoragePath = System.getenv("FILE_STORAGE_PATH");
@@ -42,6 +51,9 @@ public class Main {
         }
         FileStorageService fileStorageService = new FileStorageService(fileStoragePath, fileRepository, userRepository);
         FileUploadController fileUploadController = new FileUploadController(fileStorageService);
+        
+        // Initialize Vertex AI controller
+        VertexAiController vertexAiController = new VertexAiController(vertexAiService);
         
         // Configure Jackson for proper timestamp serialization
         ObjectMapper objectMapper = new ObjectMapper();
@@ -82,11 +94,22 @@ public class Main {
         // Register file upload routes
         fileUploadController.registerRoutes(app);
         
+        // Register Vertex AI routes
+        app.post("/api/ai/summarize", vertexAiController::summarize);
+        app.post("/api/ai/flashcards", vertexAiController::generateFlashcards);
+        app.post("/api/ai/quiz", vertexAiController::createQuiz);
+        app.post("/api/ai/explain", vertexAiController::explainConcept);
+        
         logger.info("Study Tool Backend started on port 8080");
         logger.info("Visit: http://localhost:8080");
         logger.info("Login endpoint: POST http://localhost:8080/api/login");
         logger.info("Register endpoint: POST http://localhost:8080/api/register");
         logger.info("File upload endpoint: POST http://localhost:8080/api/files/upload");
+        logger.info("AI endpoints:");
+        logger.info("  - Summarize: POST http://localhost:8080/api/ai/summarize");
+        logger.info("  - Flashcards: POST http://localhost:8080/api/ai/flashcards");
+        logger.info("  - Quiz: POST http://localhost:8080/api/ai/quiz");
+        logger.info("  - Explain: POST http://localhost:8080/api/ai/explain");
         logger.info("File storage path: {}", fileStoragePath);
     }
     
@@ -112,6 +135,25 @@ public class Main {
             logger.info("Database initialized successfully with ScyllaDB");
         } catch (Exception e) {
             logger.error("Failed to initialize database", e);
+        }
+    }
+    
+    /**
+     * Initialize Vertex AI service
+     */
+    private static void initializeVertexAi() {
+        try {
+            VertexAiConfig vertexConfig = VertexAiConfig.fromEnvironment();
+            logger.info("Initializing Vertex AI with config: {}", vertexConfig);
+            
+            SummaryRepository summaryRepository = new SummaryRepository(scyllaManager.getSession());
+            vertexAiService = new VertexAiServiceImpl(vertexConfig, summaryRepository);
+            
+            logger.info("Vertex AI service initialized successfully");
+        } catch (Exception e) {
+            logger.error("Failed to initialize Vertex AI service", e);
+            // Don't fail the entire application if Vertex AI fails to initialize
+            logger.warn("Continuing without Vertex AI functionality");
         }
     }
     

@@ -1,0 +1,23 @@
+You are an expert at creating educational flashcards. Generate {count} flashcards from the following text content. Each flashcard should test understanding of key concepts, definitions, or important facts.
+
+Format your response as a JSON array with this exact structure:
+[
+  {
+    "front": "Question or term",
+    "back": "Answer or definition"
+  }
+]
+
+Guidelines:
+- Make questions clear and specific
+- Ensure answers are accurate and concise
+- Focus on the most important concepts
+- Vary question types (definitions, explanations, examples)
+- Make sure each flashcard tests a single concept
+
+Text content:
+---
+{content}
+---
+
+Generate {count} flashcards in JSON format: 

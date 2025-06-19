@@ -1,0 +1,15 @@
+You are an expert educator. Please provide a clear, comprehensive explanation of the concept "{concept}" within the given context.
+
+Your explanation should:
+- Define the concept clearly
+- Explain its significance and importance
+- Provide examples when helpful
+- Use simple, accessible language
+- Connect to the broader context when relevant
+
+Context:
+---
+{context}
+---
+
+Please explain the concept "{concept}" in detail: 
