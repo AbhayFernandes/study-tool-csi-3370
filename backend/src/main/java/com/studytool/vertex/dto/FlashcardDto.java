@@ -8,6 +8,7 @@ import java.util.UUID;
  */
 public class FlashcardDto {
     private UUID id;
+    private UUID setId;
     private String front;
     private String back;
     private Instant createdAt;
@@ -15,8 +16,9 @@ public class FlashcardDto {
     public FlashcardDto() {
     }
     
-    public FlashcardDto(UUID id, String front, String back, Instant createdAt) {
+    public FlashcardDto(UUID id, UUID setId, String front, String back, Instant createdAt) {
         this.id = id;
+        this.setId = setId;
         this.front = front;
         this.back = back;
         this.createdAt = createdAt;
@@ -28,6 +30,14 @@ public class FlashcardDto {
     
     public void setId(UUID id) {
         this.id = id;
+    }
+    
+    public UUID getSetId() {
+        return setId;
+    }
+    
+    public void setSetId(UUID setId) {
+        this.setId = setId;
     }
     
     public String getFront() {

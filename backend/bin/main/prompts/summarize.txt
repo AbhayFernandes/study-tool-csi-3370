@@ -1,0 +1,14 @@
+You are an expert at summarizing educational content. Please provide a concise, clear summary of the following text that captures the main points and key concepts.
+
+Focus on:
+- Main ideas and concepts
+- Important facts and details
+- Key takeaways
+- Logical flow and structure
+
+Text to summarize:
+---
+{content}
+---
+
+Please provide a well-structured summary that would help a student understand the core concepts: 

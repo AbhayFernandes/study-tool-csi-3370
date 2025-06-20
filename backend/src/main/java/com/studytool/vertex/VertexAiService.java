@@ -47,4 +47,14 @@ public interface VertexAiService {
      * @return The explanation response
      */
     ExplainResponse explainConcept(ExplainRequest request);
+
+    /**
+     * Lists flashcard set summaries for a user.
+     */
+    List<com.studytool.vertex.dto.FlashcardSetSummaryDto> listFlashcardSetsByUser(java.util.UUID userId);
+
+    /**
+     * Retrieves a full flashcard set by its setId.
+     */
+    com.studytool.vertex.dto.FlashcardSetDto getFlashcardSet(java.util.UUID setId);
 } 

@@ -99,6 +99,8 @@ public class Main {
         app.post("/api/ai/flashcards", vertexAiController::generateFlashcards);
         app.post("/api/ai/quiz", vertexAiController::createQuiz);
         app.post("/api/ai/explain", vertexAiController::explainConcept);
+        app.get("/api/ai/flashcards/sets", vertexAiController::listFlashcardSets);
+        app.get("/api/ai/flashcards/sets/{setId}", vertexAiController::getFlashcardSet);
         
         logger.info("Study Tool Backend started on port 8080");
         logger.info("Visit: http://localhost:8080");
@@ -147,7 +149,11 @@ public class Main {
             logger.info("Initializing Vertex AI with config: {}", vertexConfig);
             
             SummaryRepository summaryRepository = new SummaryRepository(scyllaManager.getSession());
-            vertexAiService = new VertexAiServiceImpl(vertexConfig, summaryRepository);
+            com.studytool.vertex.repository.FlashcardRepository flashcardRepository = new com.studytool.vertex.repository.FlashcardRepository(scyllaManager.getSession());
+            com.studytool.vertex.repository.QuizRepository quizRepository = new com.studytool.vertex.repository.QuizRepository(scyllaManager.getSession());
+            com.studytool.vertex.repository.QuizQuestionRepository quizQuestionRepository = new com.studytool.vertex.repository.QuizQuestionRepository(scyllaManager.getSession());
+
+            vertexAiService = new VertexAiServiceImpl(vertexConfig, summaryRepository, flashcardRepository, quizRepository, quizQuestionRepository);
             
             logger.info("Vertex AI service initialized successfully");
         } catch (Exception e) {

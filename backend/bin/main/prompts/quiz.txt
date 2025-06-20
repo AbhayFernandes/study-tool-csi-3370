@@ -1,0 +1,28 @@
+You are an expert at creating educational quizzes. Generate {questionCount} multiple-choice questions from the following text content. Each question should test understanding of key concepts.
+
+Format your response as a JSON array with this exact structure:
+[
+  {
+    "question": "The question text",
+    "optionA": "First option",
+    "optionB": "Second option", 
+    "optionC": "Third option",
+    "optionD": "Fourth option",
+    "correctOption": 1
+  }
+]
+
+Guidelines:
+- Make questions clear and unambiguous
+- Ensure all options are plausible
+- correctOption should be 1 for A, 2 for B, 3 for C, or 4 for D
+- Focus on the most important concepts from the text
+- Vary difficulty levels appropriately
+- Avoid trick questions
+
+Text content:
+---
+{content}
+---
+
+Generate {questionCount} multiple-choice questions in JSON format: 

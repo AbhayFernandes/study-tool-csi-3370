@@ -23,6 +23,7 @@ public class FileUploadController {
         app.post("/api/files/upload", this::uploadFile);
         app.get("/api/files", this::listFiles);
         app.get("/api/files/{filename}", this::downloadFile);
+        app.get("/api/files/text/{filename}", this::downloadFileAsText);
         app.delete("/api/files/{filename}", this::deleteFile);
     }
     
@@ -99,6 +100,42 @@ public class FileUploadController {
         } catch (Exception e) {
             logger.error("File download error", e);
             ctx.status(500).json(Map.of("error", "File download failed"));
+        }
+    }
+    
+    /**
+     * Returns a plain-text representation of the stored file. Currently supports
+     * PDF and text files. Other formats return HTTP 415.
+     */
+    private void downloadFileAsText(Context ctx) {
+        try {
+            String userId = getUserId(ctx);
+            String filename = ctx.pathParam("filename");
+
+            var filePath = fileStorageService.getFile(userId, filename).toPath();
+
+            String lower = filename.toLowerCase();
+            String text;
+            if (lower.endsWith(".pdf")) {
+                try (org.apache.pdfbox.pdmodel.PDDocument doc = org.apache.pdfbox.pdmodel.PDDocument.load(filePath.toFile())) {
+                    text = new org.apache.pdfbox.text.PDFTextStripper().getText(doc);
+                }
+            } else if (lower.endsWith(".txt")) {
+                text = java.nio.file.Files.readString(filePath);
+            } else {
+                ctx.status(415).json(Map.of("error", "Unsupported file type"));
+                return;
+            }
+
+            ctx.contentType("text/plain; charset=utf-8");
+            ctx.result(text);
+
+        } catch (RuntimeException e) {
+            logger.warn("File text extraction error: {}", e.getMessage());
+            ctx.status(404).json(Map.of("error", "File not found"));
+        } catch (Exception e) {
+            logger.error("Failed to extract text", e);
+            ctx.status(500).json(Map.of("error", "Failed to extract text"));
         }
     }
     

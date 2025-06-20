@@ -14,6 +14,10 @@ COPY --from=build /app/build/libs/study-tool-backend.jar app.jar
 
 # Create non-root user
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+
+# Create placeholder for Vertex AI key file so that file bind-mount succeeds on Linux
+RUN touch /app/vertex-ai-key.json
+
 USER appuser
 
 EXPOSE 8080

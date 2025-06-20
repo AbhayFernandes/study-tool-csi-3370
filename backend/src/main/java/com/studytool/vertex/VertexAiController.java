@@ -168,6 +168,45 @@ public class VertexAiController {
     }
     
     /**
+     * GET /api/ai/flashcards/sets
+     * Returns a list of flashcard set summaries for a user.
+     */
+    public void listFlashcardSets(Context ctx) {
+        try {
+            String userIdHeader = ctx.header("X-User-ID");
+            if (userIdHeader == null || userIdHeader.isEmpty()) {
+                ctx.status(HttpStatus.BAD_REQUEST).json(new ErrorResponse("X-User-ID header required"));
+                return;
+            }
+            java.util.UUID userId = java.util.UUID.fromString(userIdHeader);
+            var summaries = vertexAiService.listFlashcardSetsByUser(userId);
+            ctx.status(HttpStatus.OK).json(summaries);
+        } catch (Exception e) {
+            logger.error("Error listing flashcard sets", e);
+            ctx.status(HttpStatus.INTERNAL_SERVER_ERROR).json(new ErrorResponse("Failed to list flashcard sets"));
+        }
+    }
+
+    /**
+     * GET /api/ai/flashcards/sets/:setId
+     */
+    public void getFlashcardSet(Context ctx) {
+        try {
+            String setIdStr = ctx.pathParam("setId");
+            java.util.UUID setId = java.util.UUID.fromString(setIdStr);
+            var setDto = vertexAiService.getFlashcardSet(setId);
+            if (setDto == null) {
+                ctx.status(HttpStatus.NOT_FOUND).json(new ErrorResponse("Flashcard set not found"));
+                return;
+            }
+            ctx.status(HttpStatus.OK).json(setDto);
+        } catch (Exception e) {
+            logger.error("Error fetching flashcard set", e);
+            ctx.status(HttpStatus.INTERNAL_SERVER_ERROR).json(new ErrorResponse("Failed to fetch flashcard set"));
+        }
+    }
+    
+    /**
      * Error response DTO for API errors.
      */
     public static class ErrorResponse {

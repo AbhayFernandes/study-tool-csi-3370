@@ -44,9 +44,9 @@ services:
       - FILE_STORAGE_PATH=/app/uploads
       
       # Vertex AI configuration
-      - VERTEX_PROJECT_ID=${VERTEX_PROJECT_ID:-your-project-id}
+      - VERTEX_PROJECT_ID=${VERTEX_PROJECT_ID:-csi3370-study-tool}
       - VERTEX_LOCATION=${VERTEX_LOCATION:-us-central1}
-      - VERTEX_TEXT_MODEL=${VERTEX_TEXT_MODEL:-text-bison-001}
+      - VERTEX_TEXT_MODEL=${VERTEX_TEXT_MODEL:-gemini-2.0-flash-lite-001}
       - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-/app/vertex-ai-key.json}
       - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-${VERTEX_PROJECT_ID}}
       

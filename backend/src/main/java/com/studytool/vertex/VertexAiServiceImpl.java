@@ -10,6 +10,9 @@ import com.google.cloud.vertexai.generativeai.ResponseHandler;
 import com.studytool.vertex.dto.*;
 import com.studytool.vertex.entity.*;
 import com.studytool.vertex.repository.SummaryRepository;
+import com.studytool.vertex.repository.FlashcardRepository;
+import com.studytool.vertex.dto.FlashcardSetSummaryDto;
+import com.studytool.vertex.dto.FlashcardSetDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +33,9 @@ public class VertexAiServiceImpl implements VertexAiService {
     private final VertexAI vertexAI;
     private final GenerativeModel model;
     private final SummaryRepository summaryRepository;
+    private final FlashcardRepository flashcardRepository;
+    private final com.studytool.vertex.repository.QuizRepository quizRepository;
+    private final com.studytool.vertex.repository.QuizQuestionRepository quizQuestionRepository;
     private final ObjectMapper objectMapper;
     
     // Prompt templates
@@ -38,8 +44,13 @@ public class VertexAiServiceImpl implements VertexAiService {
     private final String quizPrompt;
     private final String explainPrompt;
     
-    public VertexAiServiceImpl(VertexAiConfig config, SummaryRepository summaryRepository) {
+    public VertexAiServiceImpl(VertexAiConfig config, SummaryRepository summaryRepository, FlashcardRepository flashcardRepository,
+                              com.studytool.vertex.repository.QuizRepository quizRepository,
+                              com.studytool.vertex.repository.QuizQuestionRepository quizQuestionRepository) {
         this.summaryRepository = summaryRepository;
+        this.flashcardRepository = flashcardRepository;
+        this.quizRepository = quizRepository;
+        this.quizQuestionRepository = quizQuestionRepository;
         this.objectMapper = new ObjectMapper();
         
         try {
@@ -91,14 +102,17 @@ public class VertexAiServiceImpl implements VertexAiService {
                 .replace("{count}", String.valueOf(request.getCount()));
             
             String jsonResponse = generateText(prompt);
+            UUID setId = UUID.randomUUID();
             List<FlashcardDto> flashcards = parseFlashcardsFromJson(jsonResponse);
             
-            // Save flashcards to database
+            // Save flashcards to database & enrich DTOs
             for (FlashcardDto dto : flashcards) {
-                Flashcard flashcard = new Flashcard(request.getUserId(), request.getFileId(), 
-                                                   request.getContent(), dto.getFront(), dto.getBack());
-                // Note: In a full implementation, you'd have a FlashcardRepository
+                Flashcard flashcard = new Flashcard(setId, request.getUserId(), request.getFileId(),
+                        request.getContent(), dto.getFront(), dto.getBack());
+                flashcardRepository.save(flashcard);
+
                 dto.setId(flashcard.getId());
+                dto.setSetId(setId);
                 dto.setCreatedAt(flashcard.getCreatedAt());
             }
             
@@ -122,11 +136,32 @@ public class VertexAiServiceImpl implements VertexAiService {
             String jsonResponse = generateText(prompt);
             List<QuizQuestionDto> questions = parseQuizQuestionsFromJson(jsonResponse);
             
-            // Save quiz to database
-            Quiz quiz = new Quiz(request.getUserId(), request.getFileId(), 
-                               request.getContent(), request.getTitle());
-            // Note: In a full implementation, you'd have QuizRepository and QuizQuestionRepository
-            
+            // Determine title if not provided
+            String title = (request.getTitle() == null || request.getTitle().trim().isEmpty())
+                    ? generateTitleFromContent(request.getContent())
+                    : request.getTitle();
+
+            // Save quiz entity
+            Quiz quiz = new Quiz(request.getUserId(), request.getFileId(),
+                    request.getContent(), title);
+            quizRepository.save(quiz);
+
+            // Persist each question
+            List<QuizQuestion> questionEntities = new ArrayList<>();
+            for (QuizQuestionDto dto : questions) {
+                QuizQuestion entity = new QuizQuestion(
+                        quiz.getId(),
+                        dto.getQuestion(),
+                        dto.getOptionA(),
+                        dto.getOptionB(),
+                        dto.getOptionC(),
+                        dto.getOptionD(),
+                        dto.getCorrectOption()
+                );
+                quizQuestionRepository.save(entity);
+                questionEntities.add(entity);
+            }
+
             return new QuizDto(quiz.getId(), quiz.getTitle(), questions, quiz.getCreatedAt());
         } catch (Exception e) {
             logger.error("Failed to generate quiz: {}", e.getMessage(), e);
@@ -171,7 +206,8 @@ public class VertexAiServiceImpl implements VertexAiService {
             
             List<FlashcardDto> flashcards = new ArrayList<>();
             for (FlashcardJson json : flashcardJsons) {
-                flashcards.add(new FlashcardDto(UUID.randomUUID(), json.front, json.back, Instant.now()));
+                // We'll fill id and setId later when saving
+                flashcards.add(new FlashcardDto(null, null, json.front, json.back, Instant.now()));
             }
             
             return flashcards;
@@ -247,5 +283,42 @@ public class VertexAiServiceImpl implements VertexAiService {
         public String optionC;
         public String optionD;
         public int correctOption;
+    }
+
+    /* Flashcard set retrieval methods */
+
+    @Override
+    public List<FlashcardSetSummaryDto> listFlashcardSetsByUser(UUID userId) {
+        var grouped = flashcardRepository.findByUserGrouped(userId);
+        List<FlashcardSetSummaryDto> summaries = new ArrayList<>();
+        for (var entry : grouped.entrySet()) {
+            List<Flashcard> cards = entry.getValue();
+            if (cards.isEmpty()) continue;
+            Flashcard first = cards.get(0);
+            summaries.add(new FlashcardSetSummaryDto(entry.getKey(), first.getFileId(), first.getCreatedAt(), cards.size()));
+        }
+        return summaries;
+    }
+
+    @Override
+    public FlashcardSetDto getFlashcardSet(UUID setId) {
+        List<Flashcard> cards = flashcardRepository.findBySetId(setId);
+        if (cards.isEmpty()) {
+            return null;
+        }
+        Flashcard first = cards.get(0);
+        List<FlashcardDto> dtoCards = new ArrayList<>();
+        for (Flashcard card : cards) {
+            dtoCards.add(new FlashcardDto(card.getId(), card.getSetId(), card.getFront(), card.getBack(), card.getCreatedAt()));
+        }
+        return new FlashcardSetDto(setId, first.getFileId(), first.getCreatedAt(), dtoCards);
+    }
+
+    private String generateTitleFromContent(String content) {
+        if (content == null || content.isBlank()) return "Generated Quiz";
+        String[] words = content.trim().split("\\s+");
+        int limit = Math.min(words.length, 5);
+        String snippet = String.join(" ", java.util.Arrays.copyOfRange(words, 0, limit));
+        return "Quiz on " + snippet + (words.length > 5 ? "..." : "");
     }
 } 

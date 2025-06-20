@@ -40,6 +40,9 @@ dependencies {
     // Google GenAI SDK
     implementation(platform("com.google.cloud:libraries-bom:26.62.0"))
     implementation("com.google.cloud:google-cloud-vertexai")
+
+    // PDF text extraction
+    implementation("org.apache.pdfbox:pdfbox:2.0.30")
 }
 
 application {

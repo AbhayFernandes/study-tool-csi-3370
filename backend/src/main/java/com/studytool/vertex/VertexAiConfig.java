@@ -6,9 +6,9 @@ package com.studytool.vertex;
 public class VertexAiConfig {
     
     // Default configuration values
-    public static final String DEFAULT_PROJECT_ID = "your-project-id";
+    public static final String DEFAULT_PROJECT_ID = "csi3370-study-tool";
     public static final String DEFAULT_LOCATION = "us-central1";
-    public static final String DEFAULT_TEXT_MODEL = "text-bison-001";
+    public static final String DEFAULT_TEXT_MODEL = "gemini-2.0-flash-lite-001";
     
     private final String projectId;
     private final String location;
